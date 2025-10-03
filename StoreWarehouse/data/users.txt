@@ -1,0 +1,4 @@
+seller;seller;seller
+storekeeper;storekeeper;storekeeper
+admin;admin;admin
+morozov;1234;admin
