@@ -1,168 +1,198 @@
 package gui;
-// класс для добавление товаров
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 
-import model.Product;
-
-import java.awt.*;
 import service.DataManager;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import model.Product;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
 public class AddProductForm extends JFrame {
+    private DataManager dataManager;
+    
     private JTextField txtName;
     private JTextField txtPrice;
-    private JTextField txtQuantityWarehouse;
-    private JTextField txtQuantityShop;
+    private JTextField txtWarehouseQty;
+    private JTextField txtShopQty;
     private JButton btnAdd;
     private JButton btnCancel;
-    private DataManager dataManager;
-
-    public AddProductForm(DataManager dataManager){
+    
+    public AddProductForm(DataManager dataManager) {
         this.dataManager = dataManager;
         initializeComponents();
         setupLayout();
         setupListeners();
+        setupValidation();
     }
-
-    private void initializeComponents(){
-        setTitle("Добавление новго товара");
+    
+    private void initializeComponents() {
+        setTitle("Добавление товара");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(400,300);
+        setSize(400, 300);
         setLocationRelativeTo(null);
-        setResizable(false);
-
+        
         txtName = new JTextField(20);
-        txtPrice = new JTextField(20);
-        txtQuantityWarehouse = new JTextField(20);
-        txtQuantityShop = new JTextField(20);
-        btnAdd = new JButton("Добавить товар");
+        txtPrice = new JTextField(10);
+        txtWarehouseQty = new JTextField(10);
+        txtShopQty = new JTextField(10);
+        btnAdd = new JButton("Добавить");
         btnCancel = new JButton("Отмена");
     }
-    private void setupLayout(){
+    
+    private void setupLayout() {
         setLayout(new BorderLayout());
-
-        // Заголовок
+        
         JLabel lblTitle = new JLabel("Добавление нового товара", JLabel.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         add(lblTitle, BorderLayout.NORTH);
-
-        // Центральная панель с полями
-        JPanel centerPanel = new JPanel(new GridLayout(5, 2, 10, 10));
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         
-        centerPanel.add(new JLabel("Название товара:"));
-        centerPanel.add(txtName);
-        centerPanel.add(new JLabel("Цена (руб.):"));
-        centerPanel.add(txtPrice);
-        centerPanel.add(new JLabel("Количество на складе:"));
-        centerPanel.add(txtQuantityWarehouse);
-        centerPanel.add(new JLabel("Количество в магазине:"));
-        centerPanel.add(txtQuantityShop);
-        centerPanel.add(btnAdd);
-        centerPanel.add(btnCancel);
-
-        add(centerPanel, BorderLayout.CENTER);
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        inputPanel.add(new JLabel("Название:*"));
+        inputPanel.add(txtName);
+        inputPanel.add(new JLabel("Цена:*"));
+        inputPanel.add(txtPrice);
+        inputPanel.add(new JLabel("Количество на складе:*"));
+        inputPanel.add(txtWarehouseQty);
+        inputPanel.add(new JLabel("Количество в магазине:*"));
+        inputPanel.add(txtShopQty);
+        
+        add(inputPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnCancel);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
-
-     private void setupListeners() {
-        btnAdd.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addProduct();
+    
+    private void setupListeners() {
+        btnAdd.addActionListener(e -> addProduct());
+        btnCancel.addActionListener(e -> dispose());
+    }
+    
+    private void setupValidation() {
+        // Валидация цены - только числа и точка
+        txtPrice.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                String text = ((JTextField) e.getSource()).getText();
+                
+                if (!(Character.isDigit(c) || c == '.' || c == KeyEvent.VK_BACK_SPACE || c == KeyEvent.VK_DELETE)) {
+                    e.consume();
+                }
+                
+                // Проверка на одну точку
+                if (c == '.' && text.contains(".")) {
+                    e.consume();
+                }
             }
         });
-
-        btnCancel.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dispose(); // Закрыть форму
+        
+        // Валидация количеств - только цифры
+        txtWarehouseQty.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!(Character.isDigit(c) || c == KeyEvent.VK_BACK_SPACE || c == KeyEvent.VK_DELETE)) {
+                    e.consume();
+                }
+            }
+        });
+        
+        txtShopQty.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!(Character.isDigit(c) || c == KeyEvent.VK_BACK_SPACE || c == KeyEvent.VK_DELETE)) {
+                    e.consume();
+                }
             }
         });
     }
-
-    private void addProduct(){
-        try{
+    
+    private void addProduct() {
+        // Валидация обязательных полей
+        if (txtName.getText().trim().isEmpty()) {
+            showError("Введите название товара");
+            txtName.requestFocus();
+            return;
+        }
+        
+        if (txtPrice.getText().trim().isEmpty()) {
+            showError("Введите цену товара");
+            txtPrice.requestFocus();
+            return;
+        }
+        
+        if (txtWarehouseQty.getText().trim().isEmpty()) {
+            showError("Введите количество на складе");
+            txtWarehouseQty.requestFocus();
+            return;
+        }
+        
+        if (txtShopQty.getText().trim().isEmpty()) {
+            showError("Введите количество в магазине");
+            txtShopQty.requestFocus();
+            return;
+        }
+        
+        try {
             String name = txtName.getText().trim();
-            double price = Double.parseDouble(txtPrice.getText().trim());
-            int quantityWarehouse = Integer.parseInt(txtQuantityWarehouse.getText().trim());
-            int quantityShop = Integer.parseInt(txtQuantityShop.getText().trim());
+            double price = Double.parseDouble(txtPrice.getText());
+            int warehouseQty = Integer.parseInt(txtWarehouseQty.getText());
+            int shopQty = Integer.parseInt(txtShopQty.getText());
             
-            //Валидация
-            if(name.isEmpty()){
-                JOptionPane.showMessageDialog(this, "Введите название товара", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            // Дополнительная валидация
+            if (name.length() < 2) {
+                showError("Название товара должно содержать минимум 2 символа");
+                txtName.requestFocus();
                 return;
             }
-            if(price<=0){
-                JOptionPane.showMessageDialog(this, "Цена должна быть больше 0", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            
+            if (price <= 0) {
+                showError("Цена должна быть больше 0");
+                txtPrice.requestFocus();
                 return;
             }
-            if (quantityWarehouse < 0 || quantityShop < 0) {
-                JOptionPane.showMessageDialog(this, "Количество не может быть отрицательным", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            
+            if (warehouseQty < 0) {
+                showError("Количество на складе не может быть отрицательным");
+                txtWarehouseQty.requestFocus();
                 return;
             }
-            // Проверяем, нет ли уже товара с таким названием
+            
+            if (shopQty < 0) {
+                showError("Количество в магазине не может быть отрицательным");
+                txtShopQty.requestFocus();
+                return;
+            }
+            
+            // Проверка на уникальность названия
             if (dataManager.findProductByName(name) != null) {
-                JOptionPane.showMessageDialog(this, 
-                    "Товар с названием '" + name + "' уже существует", 
-                    "Ошибка", 
-                    JOptionPane.ERROR_MESSAGE);
+                showError("Товар с таким названием уже существует");
+                txtName.requestFocus();
                 return;
             }
-            // Создаем новый товар
-            int newId = findNextAvailableId();
-            Product newProduct = new Product(newId, name, price, quantityWarehouse, quantityShop);
             
-            // Добавляем в систему
-            dataManager.addProduct(newProduct);
-            dataManager.saveProducts();
+            int newId = dataManager.getNextProductId();
+            Product product = new Product(newId, name, price, warehouseQty, shopQty);
+            
+            dataManager.addProduct(product);
             
             JOptionPane.showMessageDialog(this, 
-                "Товар '" + name + "' успешно добавлен!\nID: " + newId, 
-                "Успех", 
-                JOptionPane.INFORMATION_MESSAGE);
+                "✅ Товар успешно добавлен!\nID: " + newId + "\nНазвание: " + name, 
+                "Успех", JOptionPane.INFORMATION_MESSAGE);
+                
+            dispose();
             
-            // Очищаем поля для следующего ввода
-            clearFields();
-            
-        }catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, 
-                "Проверьте правильность введенных чисел\n(цена и количество должны быть числами)", 
-                "Ошибка ввода", 
-                JOptionPane.ERROR_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                "Ошибка при добавлении товара: " + e.getMessage(), 
-                "Ошибка", 
-                JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException e) {
+            showError("Проверьте правильность введенных чисел:\n- Цена должна быть числом (например: 1500.50)\n- Количества должны быть целыми числами");
         }
-
+    }
+    
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Ошибка валидации", JOptionPane.ERROR_MESSAGE);
     }
 
-     private int findNextAvailableId() {
-        // Находим максимальный ID и возвращаем следующий
-        int maxId = 0;
-        for (Product product : dataManager.getProducts().values()) {
-            if (product.getId() > maxId) {
-                maxId = product.getId();
-            }
-        }
-        return maxId + 1;
-    }
-
-    private void clearFields() {
-        txtName.setText("");
-        txtPrice.setText("");
-        txtQuantityWarehouse.setText("");
-        txtQuantityShop.setText("");
-        txtName.requestFocus();
-    }
+    
 }
-
-

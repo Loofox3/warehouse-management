@@ -1,4 +1,4 @@
-seller;seller;seller
-storekeeper;storekeeper;storekeeper
-admin;admin;admin
-morozov;1234;admin
+# ID|Логин|Пароль|Роль
+2|aaa|123|SELLER
+3|fff|321|WAREHOUSE_MANAGER
+1|morozov|1234|ADMIN

@@ -1,17 +1,19 @@
 package gui;
 
-import javax.swing.*;
-
 import model.User;
 import service.DataManager;
-
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-public class StorekeeperMainForm extends JFrame { // класс для кладовщика
+public class StorekeeperMainForm extends JFrame {
     private User currentUser;
     private DataManager dataManager;
+    
+    private JButton btnReceiveGoods;
+    private JButton btnProcessOrders;
+    private JButton btnPrepareShipment;
+    private JButton btnViewProducts;
+    private JButton btnExit;
 
     public StorekeeperMainForm(User user, DataManager dataManager) {
         this.currentUser = user;
@@ -26,6 +28,12 @@ public class StorekeeperMainForm extends JFrame { // класс для клад�
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(700, 500);
         setLocationRelativeTo(null);
+        
+        btnReceiveGoods = new JButton("<html><center>Прием<br>товаров</center></html>");
+        btnProcessOrders = new JButton("<html><center>Обработка<br>заказов</center></html>");
+        btnPrepareShipment = new JButton("<html><center>Подготовка<br>отгрузки</center></html>");
+        btnViewProducts = new JButton("<html><center>Просмотр<br>товаров</center></html>");
+        btnExit = new JButton("Выход");
     }
 
     private void setupLayout() {
@@ -39,20 +47,17 @@ public class StorekeeperMainForm extends JFrame { // класс для клад�
         JPanel mainPanel = new JPanel(new GridLayout(2, 2, 15, 15));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JButton btnViewWarehouse = new JButton("<html><center>Просмотр<br>склада</center></html>");
-        JButton btnReceiveGoods = new JButton("<html><center>Приемка<br>товаров</center></html>");
-        JButton btnManageStock = new JButton("<html><center>Управление<br>запасами</center></html>");
-        JButton btnExit = new JButton("Выход");
-
         Font buttonFont = new Font("Arial", Font.PLAIN, 14);
-        btnViewWarehouse.setFont(buttonFont);
         btnReceiveGoods.setFont(buttonFont);
-        btnManageStock.setFont(buttonFont);
+        btnProcessOrders.setFont(buttonFont);
+        btnPrepareShipment.setFont(buttonFont);
+        btnViewProducts.setFont(buttonFont);
         btnExit.setFont(buttonFont);
 
-        mainPanel.add(btnViewWarehouse);
         mainPanel.add(btnReceiveGoods);
-        mainPanel.add(btnManageStock);
+        mainPanel.add(btnProcessOrders);
+        mainPanel.add(btnPrepareShipment);
+        mainPanel.add(btnViewProducts);
         mainPanel.add(btnExit);
 
         add(mainPanel, BorderLayout.CENTER);
@@ -63,18 +68,22 @@ public class StorekeeperMainForm extends JFrame { // класс для клад�
     }
 
     private void setupListeners() {
-        ActionListener tempHandler = e -> {
-            JButton source = (JButton) e.getSource();
-            JOptionPane.showMessageDialog(this, 
-                "Функция кладовщика: " + source.getText().replaceAll("<.*?>", ""), 
-                "Информация", 
-                JOptionPane.INFORMATION_MESSAGE);
-        };
+        btnReceiveGoods.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Прием товаров - в разработке");
+        });
 
-        for (Component comp : ((JPanel)getContentPane().getComponent(1)).getComponents()) {
-            if (comp instanceof JButton) {
-                ((JButton) comp).addActionListener(tempHandler);
-            }
-        }
+        btnProcessOrders.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Обработка заказов - в разработке");
+        });
+
+        btnPrepareShipment.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Подготовка отгрузки - в разработке");
+        });
+
+        btnViewProducts.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Просмотр товаров - в разработке");
+        });
+
+        btnExit.addActionListener(e -> System.exit(0));
     }
 }

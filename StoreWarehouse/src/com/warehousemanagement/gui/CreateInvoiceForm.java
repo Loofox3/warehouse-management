@@ -1,6 +1,5 @@
 package gui;
 
-
 import service.DataManager;
 import model.Product;
 import model.Invoice;
@@ -8,16 +7,18 @@ import model.InvoiceItem;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
-// создание накладнгых
+
 public class CreateInvoiceForm extends JFrame {
     private DataManager dataManager;
     
     private JComboBox<String> comboProducts;
     private JTextField txtQuantity;
     private JButton btnAddItem;
-    private JButton btnCreateInvoiceForm;
+    private JButton btnCreateInvoice;
     private JButton btnCancel;
     
     private JTable itemsTable;
@@ -29,6 +30,7 @@ public class CreateInvoiceForm extends JFrame {
         initializeComponents();
         setupLayout();
         setupListeners();
+        setupValidation();
         loadProductsData();
     }
 
@@ -42,7 +44,7 @@ public class CreateInvoiceForm extends JFrame {
         comboProducts = new JComboBox<>();
         txtQuantity = new JTextField(10);
         btnAddItem = new JButton("Добавить в накладную");
-        btnCreateInvoiceForm = new JButton("Создать накладную");
+        btnCreateInvoice = new JButton("Создать накладную");
         btnCancel = new JButton("Отмена");
 
         // Таблица для выбранных товаров
@@ -83,15 +85,27 @@ public class CreateInvoiceForm extends JFrame {
         // Панель кнопок
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        buttonPanel.add(btnCreateInvoiceForm);
+        buttonPanel.add(btnCreateInvoice);
         buttonPanel.add(btnCancel);
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void setupListeners() {
         btnAddItem.addActionListener(e -> addItemToInvoice());
-        btnCreateInvoiceForm.addActionListener(e -> createInvoice());
+        btnCreateInvoice.addActionListener(e -> createInvoice());
         btnCancel.addActionListener(e -> dispose());
+    }
+
+    private void setupValidation() {
+        // Валидация количества - только цифры
+        txtQuantity.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!(Character.isDigit(c) || c == KeyEvent.VK_BACK_SPACE || c == KeyEvent.VK_DELETE)) {
+                    e.consume();
+                }
+            }
+        });
     }
 
     private void loadProductsData() {
@@ -105,19 +119,22 @@ public class CreateInvoiceForm extends JFrame {
         try {
             int selectedIndex = comboProducts.getSelectedIndex();
             if (selectedIndex == -1) {
-                JOptionPane.showMessageDialog(this, "Выберите товар", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                showError("Выберите товар из списка");
+                comboProducts.requestFocus();
                 return;
             }
 
             String quantityText = txtQuantity.getText().trim();
             if (quantityText.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Введите количество", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                showError("Введите количество товара");
+                txtQuantity.requestFocus();
                 return;
             }
 
             int quantity = Integer.parseInt(quantityText);
             if (quantity <= 0) {
-                JOptionPane.showMessageDialog(this, "Количество должно быть больше 0", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                showError("Количество должно быть больше 0");
+                txtQuantity.requestFocus();
                 return;
             }
 
@@ -127,17 +144,26 @@ public class CreateInvoiceForm extends JFrame {
             Product product = dataManager.findProductByName(productName);
 
             if (product == null) {
-                JOptionPane.showMessageDialog(this, "Товар не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                showError("Товар не найден в системе");
                 return;
             }
 
             // Проверяем наличие на складе
             if (product.getQuantityInWarehouse() < quantity) {
-                JOptionPane.showMessageDialog(this, 
-                    "Недостаточно товара на складе\nДоступно: " + product.getQuantityInWarehouse(), 
-                    "Ошибка", 
-                    JOptionPane.ERROR_MESSAGE);
+                showError("Недостаточно товара на складе\nДоступно: " + product.getQuantityInWarehouse() + " шт.");
+                txtQuantity.setText("");
+                txtQuantity.requestFocus();
                 return;
+            }
+
+            // Проверяем, не добавлен ли уже этот товар
+            if (selectedItems.containsKey(product)) {
+                int currentQty = selectedItems.get(product);
+                if (product.getQuantityInWarehouse() < currentQty + quantity) {
+                    showError("Недостаточно товара на складе с учетом уже добавленного количества\nДоступно: " + 
+                             (product.getQuantityInWarehouse() - currentQty) + " шт.");
+                    return;
+                }
             }
 
             // Добавляем в выбранные товары
@@ -146,9 +172,11 @@ public class CreateInvoiceForm extends JFrame {
 
             // Очищаем поле количества
             txtQuantity.setText("");
+            txtQuantity.requestFocus();
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Введите корректное число", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            showError("Введите корректное целое число для количества");
+            txtQuantity.requestFocus();
         }
     }
 
@@ -181,14 +209,27 @@ public class CreateInvoiceForm extends JFrame {
 
     private void createInvoice() {
         if (selectedItems.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Добавьте товары в накладную", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            showError("Добавьте хотя бы один товар в накладную");
+            return;
+        }
+
+        // Подтверждение создания накладной
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Вы уверены, что хотите создать накладную?\nТоваров: " + selectedItems.size() + "\n" +
+            "Общая сумма: " + String.format("%.2f руб.", calculateTotalAmount()),
+            "Подтверждение создания накладной",
+            JOptionPane.YES_NO_OPTION);
+            
+        if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
 
         try {
             // Создаем новую накладную
-            int newInvoiceId = findNextAvailableInvoiceId();
+            int newInvoiceId = dataManager.getNextInvoiceId();
             Invoice newInvoice = new Invoice(newInvoiceId);
+            newInvoice.setType("ORDER");
+            newInvoice.setStatus("CREATED");
 
             // Добавляем товары в накладную
             for (Map.Entry<Product, Integer> entry : selectedItems.entrySet()) {
@@ -201,35 +242,29 @@ public class CreateInvoiceForm extends JFrame {
                 product.setQuantityInShop(product.getQuantityInShop() + quantity);
             }
 
-            // Сохраняем накладную и обновляем товары
             dataManager.addInvoice(newInvoice);
-            dataManager.saveInvoices();
             dataManager.saveProducts();
 
             JOptionPane.showMessageDialog(this, 
-                "Накладная #" + newInvoiceId + " успешно создана!\n" +
+                "✅ Накладная #" + newInvoiceId + " успешно создана!\n" +
                 "Товаров: " + selectedItems.size() + "\n" +
                 "Общая сумма: " + String.format("%.2f руб.", newInvoice.getTotalAmount()), 
-                "Успех", 
-                JOptionPane.INFORMATION_MESSAGE);
+                "Успех", JOptionPane.INFORMATION_MESSAGE);
 
             dispose();
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                "Ошибка при создании накладной: " + e.getMessage(), 
-                "Ошибка", 
-                JOptionPane.ERROR_MESSAGE);
+            showError("Ошибка при создании накладной: " + e.getMessage());
         }
     }
 
-    private int findNextAvailableInvoiceId() {
-        int maxId = 0;
-        for (Invoice invoice : dataManager.getInvoices().values()) {
-            if (invoice.getId() > maxId) {
-                maxId = invoice.getId();
-            }
-        }
-        return maxId + 1;
+    private double calculateTotalAmount() {
+        return selectedItems.entrySet().stream()
+                .mapToDouble(entry -> entry.getKey().getPrice() * entry.getValue())
+                .sum();
+    }
+
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Ошибка валидации", JOptionPane.ERROR_MESSAGE);
     }
 }

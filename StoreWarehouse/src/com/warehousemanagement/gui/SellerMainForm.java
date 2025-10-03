@@ -1,18 +1,18 @@
 package gui;
 
-import javax.swing.*;
 import model.User;
 import service.DataManager;
+import javax.swing.*;
 import java.awt.*;
 
 public class SellerMainForm extends JFrame {
     private User currentUser;
     private DataManager dataManager;
     
-    // Объявляем кнопки как поля класса
     private JButton btnSellProducts;
-    private JButton btnViewProducts;
-    private JButton btnCreateInvoice;
+    private JButton btnViewShopProducts; // НОВАЯ КНОПКА
+    private JButton btnCreateOrder;
+    private JButton btnReceiveGoods;
     private JButton btnExit;
 
     public SellerMainForm(User user, DataManager dataManager) {
@@ -29,10 +29,10 @@ public class SellerMainForm extends JFrame {
         setSize(700, 500);
         setLocationRelativeTo(null);
         
-        // Инициализируем кнопки
         btnSellProducts = new JButton("<html><center>Продажа<br>товаров</center></html>");
-        btnViewProducts = new JButton("<html><center>Просмотр<br>товаров</center></html>");
-        btnCreateInvoice = new JButton("<html><center>Создать<br>накладную</center></html>");
+        btnViewShopProducts = new JButton("<html><center>Просмотр<br>товаров в магазине</center></html>"); // НОВАЯ КНОПКА
+        btnCreateOrder = new JButton("<html><center>Заказ товаров<br>со склада</center></html>");
+        btnReceiveGoods = new JButton("<html><center>Прием товаров<br>со склада</center></html>");
         btnExit = new JButton("Выход");
     }
 
@@ -47,17 +47,17 @@ public class SellerMainForm extends JFrame {
         JPanel mainPanel = new JPanel(new GridLayout(2, 2, 15, 15));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Устанавливаем шрифт для кнопок
         Font buttonFont = new Font("Arial", Font.PLAIN, 14);
         btnSellProducts.setFont(buttonFont);
-        btnViewProducts.setFont(buttonFont);
-        btnCreateInvoice.setFont(buttonFont);
+        btnViewShopProducts.setFont(buttonFont); // НОВАЯ КНОПКА
+        btnCreateOrder.setFont(buttonFont);
+        btnReceiveGoods.setFont(buttonFont);
         btnExit.setFont(buttonFont);
 
-        // Добавляем кнопки на панель
         mainPanel.add(btnSellProducts);
-        mainPanel.add(btnViewProducts);
-        mainPanel.add(btnCreateInvoice);
+        mainPanel.add(btnViewShopProducts); // НОВАЯ КНОПКА
+        mainPanel.add(btnCreateOrder);
+        mainPanel.add(btnReceiveGoods);
         mainPanel.add(btnExit);
 
         add(mainPanel, BorderLayout.CENTER);
@@ -68,25 +68,26 @@ public class SellerMainForm extends JFrame {
     }
 
     private void setupListeners() {
-        // Оформление продаж
         btnSellProducts.addActionListener(e -> {
             SellProductsForm sellForm = new SellProductsForm(dataManager);
             sellForm.setVisible(true);
         });
 
-        // Создание накладной
-        btnCreateInvoice.addActionListener(e -> {
-            CreateInvoiceForm invoiceForm = new CreateInvoiceForm(dataManager);
-            invoiceForm.setVisible(true);
-        });
-
-        // Просмотр товаров
-        btnViewProducts.addActionListener(e -> {
-            ViewProductsForm viewForm = new ViewProductsForm(dataManager);
+        // НОВЫЙ ОБРАБОТЧИК - просмотр товаров в магазине
+        btnViewShopProducts.addActionListener(e -> {
+            ViewShopProductsForm viewForm = new ViewShopProductsForm(dataManager);
             viewForm.setVisible(true);
         });
 
-        // Выход
+        btnCreateOrder.addActionListener(e -> {
+            CreateInvoiceForm orderForm = new CreateInvoiceForm(dataManager);
+            orderForm.setVisible(true);
+        });
+
+        btnReceiveGoods.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Прием товаров со склада - в разработке");
+        });
+
         btnExit.addActionListener(e -> System.exit(0));
     }
 }

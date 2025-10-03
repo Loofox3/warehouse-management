@@ -1,24 +1,21 @@
 package gui;
 
-import javax.swing.*;
-
 import model.User;
 import service.AuthService;
 import service.DataManager;
-
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-public class LoginForm extends JFrame { // класс для входа в систему (база)
-    private JTextField txtUsername;
-    private JPasswordField txtPassword;
-    private JButton btnLogin;
-    private JButton btnRegister; // ДОБАВЛЕНО
-    private JButton btnExit;
+public class LoginForm extends JFrame {
     private AuthService authService;
     private DataManager dataManager;
-
+    
+    private JTextField txtLogin;
+    private JPasswordField txtPassword;
+    private JButton btnLogin;
+    private JButton btnRegister;
+    private JButton btnCancel;
+    
     public LoginForm(AuthService authService, DataManager dataManager) {
         this.authService = authService;
         this.dataManager = dataManager;
@@ -26,96 +23,101 @@ public class LoginForm extends JFrame { // класс для входа в си�
         setupLayout();
         setupListeners();
     }
-
+    
     private void initializeComponents() {
-        setTitle("Система Магазин-Склад - Вход");
+        setTitle("Вход в систему");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 350); // УВЕЛИЧИЛИ ВЫСОТУ ДЛЯ НОВОЙ КНОПКИ
+        setSize(350, 250); // Увеличили высоту для новой кнопки
         setLocationRelativeTo(null);
         setResizable(false);
-
-        txtUsername = new JTextField(15);
+        
+        txtLogin = new JTextField(15);
         txtPassword = new JPasswordField(15);
-        btnLogin = new JButton("Войти");
-        btnRegister = new JButton("Регистрация"); // ДОБАВЛЕНО
-        btnExit = new JButton("Выход");
+        btnLogin = new JButton("Вход");
+        btnRegister = new JButton("Регистрация");
+        btnCancel = new JButton("Отмена");
     }
-
+    
     private void setupLayout() {
         setLayout(new BorderLayout());
-
-        JLabel lblTitle = new JLabel("Вход в систему", JLabel.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        add(lblTitle, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        centerPanel.add(new JLabel("Логин:"));
-        centerPanel.add(txtUsername);
-        centerPanel.add(new JLabel("Пароль:"));
-        centerPanel.add(txtPassword);
-        centerPanel.add(btnLogin);
-        centerPanel.add(btnExit);
-
-        add(centerPanel, BorderLayout.CENTER);
-
-        // НИЖНЯЯ ПАНЕЛЬ С КНОПКОЙ РЕГИСТРАЦИИ
-        JPanel bottomPanel = new JPanel(new FlowLayout());
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
-        bottomPanel.add(btnRegister);
-        add(bottomPanel, BorderLayout.SOUTH);
+        // Заголовок
+        JLabel lblTitle = new JLabel("Система Магазин-Склад", JLabel.CENTER);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        add(lblTitle, BorderLayout.NORTH);
+        
+        // Панель ввода
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        inputPanel.add(new JLabel("Логин:"));
+        inputPanel.add(txtLogin);
+        inputPanel.add(new JLabel("Пароль:"));
+        inputPanel.add(txtPassword);
+        
+        add(inputPanel, BorderLayout.CENTER);
+        
+        // Панель кнопок
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        buttonPanel.add(btnLogin);
+        buttonPanel.add(btnRegister);
+        buttonPanel.add(btnCancel);
+        
+        add(buttonPanel, BorderLayout.SOUTH);
     }
-
+    
     private void setupListeners() {
         btnLogin.addActionListener(e -> performLogin());
-        btnExit.addActionListener(e -> System.exit(0));
-        txtPassword.addActionListener(e -> performLogin());
+        btnRegister.addActionListener(e -> openRegistration());
+        btnCancel.addActionListener(e -> System.exit(0));
         
-        // ДОБАВЛЕНО - обработчик для кнопки регистрации
-        btnRegister.addActionListener(e -> openRegisterForm());
+        // Enter для логина
+        txtPassword.addActionListener(e -> performLogin());
     }
-
     private void performLogin() {
-        String username = txtUsername.getText().trim();
-        String password = new String(txtPassword.getPassword());
-
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Введите логин и пароль", "Ошибка", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        User user = authService.login(username, password);
-        if (user != null) {
-            openMainForm(user);
-            dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "Неверный логин или пароль", "Ошибка", JOptionPane.ERROR_MESSAGE);
-            txtPassword.setText("");
-            txtUsername.requestFocus();
-        }
+    String login = txtLogin.getText().trim();
+    String password = new String(txtPassword.getPassword());
+    
+    // Валидация
+    if (login.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Введите логин", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        txtLogin.requestFocus();
+        return;
     }
-
-    private void openMainForm(User user) {
+    
+    if (password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Введите пароль", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        txtPassword.requestFocus();
+        return;
+    }
+    
+    User user = authService.authenticate(login, password);
+    if (user != null) {
+        dispose();
+        
         switch (user.getRole()) {
-            case "admin":
-                new AdminMainForm(user, dataManager).setVisible(true);
-                break;
-            case "seller":
+            case "SELLER":
                 new SellerMainForm(user, dataManager).setVisible(true);
                 break;
-            case "storekeeper":
+            case "ADMIN":
+                new AdminMainForm(user, dataManager).setVisible(true);
+                break;
+            case "WAREHOUSE_MANAGER":
                 new StorekeeperMainForm(user, dataManager).setVisible(true);
                 break;
             default:
-                JOptionPane.showMessageDialog(this, "Неизвестная роль", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Неизвестная роль пользователя", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
+    } else {
+        JOptionPane.showMessageDialog(this, "Неверный логин или пароль", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        txtPassword.setText("");
+        txtPassword.requestFocus();
     }
-
-    // ДОБАВЛЕНО - метод для открытия формы регистрации
-    private void openRegisterForm() {
-        RegisterForm registerForm = new RegisterForm(dataManager, this);
+}
+    
+    private void openRegistration() {
+        RegisterForm registerForm = new RegisterForm(dataManager);
         registerForm.setVisible(true);
     }
 }

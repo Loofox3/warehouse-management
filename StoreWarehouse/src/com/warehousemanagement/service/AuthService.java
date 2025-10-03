@@ -1,20 +1,18 @@
 package service;
 
-import model.*;
-import java.util.Map;
+import model.User;
 
 public class AuthService {
-    private final DataManager dataManager;
+    private DataManager dataManager;
     
     public AuthService(DataManager dataManager) {
         this.dataManager = dataManager;
     }
     
-    public User login(String username, String password) {
-        Map<String, User> users = dataManager.getUsers();
-        User user = users.get(username);
-        
-        if (user != null && user.authenticate(password)) {
+    // ДОБАВИТЬ этот метод
+    public User authenticate(String login, String password) {
+        User user = dataManager.getUsers().get(login);
+        if (user != null && user.getPassword().equals(password)) {
             return user;
         }
         return null;
